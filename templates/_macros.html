@@ -1,0 +1,41 @@
+{% macro icon(nombre, tam=20) -%}
+<svg class="icon" width="{{ tam }}" height="{{ tam }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ ICONOS[nombre]|safe }}</svg>
+{%- endmacro %}
+
+{% macro csrf() -%}
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+{%- endmacro %}
+
+{% macro error(errores, campo) -%}
+{% if errores.get(campo) %}<p class="field-error">{{ errores[campo] }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro chip(nombre, color) -%}
+<span class="chip" style="--c: {{ color }}"><span class="dot"></span>{{ nombre }}</span>
+{%- endmacro %}
+
+{# Fila de un movimiento: se usa en el resumen y en la lista de movimientos. #}
+{% macro fila_movimiento(m, volver) -%}
+<li class="mov-row">
+  <span class="mov-icon {{ m.tipo }}">{{ icon(m.tipo, 18) }}</span>
+  <div class="mov-info">
+    <span class="mov-desc">{{ m.descripcion or ('Ingreso' if m.tipo == 'ingreso' else 'Gasto') + ' sin descripción' }}</span>
+    <span class="mov-meta">
+      <span class="mov-fecha">{{ m.fecha|fecha }}</span>
+      <span class="mov-cat-mobile">· {{ m.categoria }}</span>
+    </span>
+  </div>
+  <span class="mov-cat">{{ chip(m.categoria, m.color) }}</span>
+  <span class="mov-importe {{ m.tipo }}">{{ ('+' if m.tipo == 'ingreso' else '−') }}{{ m.importe_cent|dinero }}</span>
+  <span class="mov-acciones">
+    <a class="icon-btn" href="{{ url_for('editar_movimiento', mov_id=m.id, next=volver) }}" title="Editar" aria-label="Editar">{{ icon('editar', 17) }}</a>
+    <form method="post" action="{{ url_for('eliminar_movimiento', mov_id=m.id) }}"
+          data-confirm="¿Eliminar este movimiento de {{ m.importe_cent|dinero }}? Esta acción no se puede deshacer.">
+      {{ csrf() }}<input type="hidden" name="next" value="{{ volver }}">
+      <button class="icon-btn danger" type="submit" title="Eliminar" aria-label="Eliminar">{{ icon('eliminar', 17) }}</button>
+    </form>
+  </span>
+</li>
+{%- endmacro %}
+
+{% macro saldo_clase(valor) -%}{{ 'positivo' if valor > 0 else ('negativo' if valor < 0 else '') }}{%- endmacro %}

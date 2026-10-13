@@ -1,0 +1,93 @@
+{% from "_macros.html" import icon, csrf %}
+{% set nav = [
+  ('resumen', 'Resumen', 'inicio'),
+  ('movimientos', 'Movimientos', 'lista'),
+  ('informes', 'Informes', 'grafico'),
+  ('categorias_view', 'Categorías', 'etiqueta'),
+  ('ajustes', 'Ajustes', 'ajustes'),
+] %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <title>{% block title %}{% endblock %} · {{ ajustes.nombre_negocio }}</title>
+  <link rel="icon" href="{{ estatico('img/icono.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ estatico('css/estilos.css') }}">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('resumen') }}">
+      <span class="brand-logo">{{ icon('cartera', 20) }}</span>
+      <span class="brand-text">
+        <strong>{{ ajustes.nombre_negocio }}</strong>
+        <small>Ingresos y gastos</small>
+      </span>
+    </a>
+    <a class="btn btn-primary btn-block sidebar-cta" href="{{ url_for('nuevo_movimiento') }}">{{ icon('mas', 18) }} Nuevo movimiento</a>
+    <nav class="side-nav">
+      {% for endpoint, texto, ic in nav %}
+      <a href="{{ url_for(endpoint) }}" class="{{ 'active' if seccion == endpoint }}">{{ icon(ic) }}<span>{{ texto }}</span></a>
+      {% endfor %}
+    </nav>
+    <form method="post" action="{{ url_for('salir') }}" class="side-logout">
+      {{ csrf() }}
+      <button type="submit">{{ icon('salir') }}<span>Cerrar sesión</span></button>
+    </form>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <a class="brand" href="{{ url_for('resumen') }}">
+        <span class="brand-logo">{{ icon('cartera', 18) }}</span>
+        <strong>{{ ajustes.nombre_negocio }}</strong>
+      </a>
+      <form method="post" action="{{ url_for('salir') }}">
+        {{ csrf() }}
+        <button class="icon-btn" type="submit" title="Cerrar sesión" aria-label="Cerrar sesión">{{ icon('salir') }}</button>
+      </form>
+    </header>
+
+    <main class="content">
+      {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+        <div class="flashes">
+          {% for cat, msg in mensajes %}
+          <div class="flash flash-{{ cat }}" role="status">
+            {{ icon('check' if cat == 'ok' else 'alerta', 18) }}<span>{{ msg }}</span>
+            <button type="button" class="flash-close" aria-label="Cerrar">{{ icon('cerrar', 16) }}</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Navegación principal">
+    <a href="{{ url_for('resumen') }}" class="{{ 'active' if seccion == 'resumen' }}">{{ icon('inicio') }}<span>Resumen</span></a>
+    <a href="{{ url_for('movimientos') }}" class="{{ 'active' if seccion == 'movimientos' }}">{{ icon('lista') }}<span>Movimientos</span></a>
+    <a href="{{ url_for('nuevo_movimiento') }}" class="fab" aria-label="Nuevo movimiento">{{ icon('mas', 26) }}</a>
+    <a href="{{ url_for('informes') }}" class="{{ 'active' if seccion == 'informes' }}">{{ icon('grafico') }}<span>Informes</span></a>
+    <a href="{{ url_for('ajustes') }}" class="{{ 'active' if seccion in ('ajustes', 'categorias_view') }}">{{ icon('ajustes') }}<span>Más</span></a>
+  </nav>
+</div>
+
+<dialog id="dialogo-confirmar" class="dialog">
+  <form method="dialog">
+    <div class="dialog-icon">{{ icon('eliminar', 22) }}</div>
+    <h2>¿Estás seguro?</h2>
+    <p id="dialogo-mensaje"></p>
+    <div class="dialog-actions">
+      <button class="btn btn-ghost" value="cancelar">Cancelar</button>
+      <button class="btn btn-danger" value="aceptar">Sí, eliminar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="{{ estatico('js/app.js') }}"></script>
+</body>
+</html>

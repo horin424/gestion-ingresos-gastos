@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, chip %}
+{% set seccion = 'categorias_view' %}
+{% block title %}Eliminar categoría{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{{ url_for('categorias_view') }}">{{ icon('anterior', 16) }} Volver</a>
+    <h1>Eliminar categoría</h1>
+  </div>
+</div>
+
+<form method="post" class="card form form-narrow">
+  {{ csrf() }}
+  <p>La categoría {{ chip(cat.nombre, cat.color) }} tiene <strong>{{ cantidad }} movimiento{{ 's' if cantidad != 1 }}</strong>.
+     Para no perderlos, elige a qué categoría se moverán antes de eliminarla.</p>
+  {% if destinos %}
+  <label class="field">
+    <span>Mover los movimientos a</span>
+    <select name="mover_a" required>
+      <option value="">Elegir…</option>
+      {% for c in destinos %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('categorias_view') }}">Cancelar</a>
+    <button class="btn btn-danger" type="submit">{{ icon('eliminar', 18) }} Mover y eliminar</button>
+  </div>
+  {% else %}
+  <div class="flash flash-error">{{ icon('alerta', 18) }}<span>No hay otra categoría compatible. Crea primero una categoría para «{{ TIPOS_CATEGORIA[cat.tipo]|lower }}».</span></div>
+  <a class="btn btn-ghost" href="{{ url_for('categorias_view') }}">Volver a categorías</a>
+  {% endif %}
+</form>
+{% endblock %}

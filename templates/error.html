@@ -1,0 +1,7 @@
+{% extends "auth_base.html" %}
+{% block title %}Error {{ codigo }}{% endblock %}
+{% block content %}
+<h1>Error {{ codigo }}</h1>
+<p class="muted">{{ mensaje }}</p>
+<a class="btn btn-primary btn-block btn-lg" href="{{ url_for('resumen') }}">Volver al inicio</a>
+{% endblock %}

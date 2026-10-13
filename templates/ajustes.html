@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, error %}
+{% set seccion = 'ajustes' %}
+{% block title %}Ajustes{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Ajustes</h1>
+    <p class="muted">Datos del negocio, seguridad y copias de seguridad.</p>
+  </div>
+</div>
+
+<a class="card card-link mobile-only" href="{{ url_for('categorias_view') }}">
+  <span class="stat-icon">{{ icon('etiqueta', 18) }}</span>
+  <span><strong>Categorías</strong><small class="muted block">Crear, editar o eliminar categorías</small></span>
+  {{ icon('siguiente', 18) }}
+</a>
+
+<div class="grid-2">
+  <article class="card">
+    <header class="card-head"><h2>Negocio y moneda</h2></header>
+    <form method="post" class="form">
+      {{ csrf() }}
+      <label class="field">
+        <span>Nombre del negocio</span>
+        <input type="text" name="nombre_negocio" maxlength="60" required value="{{ ajustes.nombre_negocio }}"
+               class="{{ 'invalid' if errores.nombre_negocio }}">
+        {{ error(errores, 'nombre_negocio') }}
+      </label>
+      <div class="form-row">
+        <label class="field">
+          <span>Símbolo de moneda</span>
+          <input type="text" name="simbolo" maxlength="5" value="{{ ajustes.simbolo }}" placeholder="$">
+        </label>
+        <label class="field">
+          <span>Formato de números</span>
+          <select name="separadores">
+            <option value="coma_punto" {{ 'selected' if ajustes.separadores == 'coma_punto' }}>1,234.56</option>
+            <option value="punto_coma" {{ 'selected' if ajustes.separadores == 'punto_coma' }}>1.234,56</option>
+          </select>
+          {{ error(errores, 'separadores') }}
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">{{ icon('check', 18) }} Guardar</button>
+      </div>
+    </form>
+  </article>
+
+  <article class="card" id="seguridad">
+    <header class="card-head"><h2>Cambiar contraseña</h2></header>
+    <form method="post" action="{{ url_for('cambiar_contrasena') }}" class="form">
+      {{ csrf() }}
+      <label class="field">
+        <span>Contraseña actual</span>
+        <input type="password" name="actual" required autocomplete="current-password">
+      </label>
+      <div class="form-row">
+        <label class="field">
+          <span>Nueva contraseña</span>
+          <input type="password" name="nueva" minlength="6" required autocomplete="new-password">
+        </label>
+        <label class="field">
+          <span>Repetir nueva</span>
+          <input type="password" name="nueva2" minlength="6" required autocomplete="new-password">
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-dark" type="submit">{{ icon('candado', 18) }} Cambiar contraseña</button>
+      </div>
+    </form>
+  </article>
+</div>
+
+<article class="card" id="copias">
+  <header class="card-head">
+    <h2>Copias de seguridad</h2>
+    <span class="badge">{{ icon('escudo', 14) }} Copia automática diaria activada</span>
+  </header>
+  <p class="muted">
+    El sistema guarda automáticamente una copia cada día (se conservan las últimas 30) en la carpeta
+    <code>datos/copias</code>. Además, te recomendamos descargar una copia y guardarla fuera del equipo
+    (USB, Google Drive, correo…) al menos una vez por semana.
+  </p>
+
+  <div class="backup-grid">
+    <div class="backup-box">
+      <h3>{{ icon('descargar', 18) }} Descargar copia</h3>
+      <p class="muted">Archivo con todos tus datos: {{ estadisticas.cantidad }} movimientos, categorías y ajustes.</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="{{ url_for('descargar_copia') }}">{{ icon('descargar', 18) }} Descargar copia (.db)</a>
+        <a class="btn btn-ghost" href="{{ url_for('exportar_movimientos') }}">{{ icon('archivo', 18) }} Exportar a Excel (.csv)</a>
+      </div>
+    </div>
+    <div class="backup-box">
+      <h3>{{ icon('subir', 18) }} Restaurar copia</h3>
+      <p class="muted">Reemplaza los datos actuales por los de una copia. Antes se guarda automáticamente el estado actual.</p>
+      <form method="post" action="{{ url_for('restaurar_copia') }}" enctype="multipart/form-data" class="btn-row"
+            data-confirm="Los datos actuales se reemplazarán por los de la copia seleccionada. ¿Continuar?" data-confirm-texto="Sí, restaurar">
+        {{ csrf() }}
+        <input type="file" name="archivo" accept=".db" required class="file-input">
+        <button class="btn btn-dark" type="submit">{{ icon('subir', 18) }} Restaurar</button>
+      </form>
+    </div>
+  </div>
+
+  {% if copias %}
+  <details class="copias-list">
+    <summary>Copias guardadas en el equipo ({{ copias|length }})</summary>
+    <ul>
+      {% for c in copias %}
+      <li>
+        <span>{{ icon('archivo', 16) }} {{ c.nombre }}</span>
+        <small class="muted">{{ c.fecha.strftime('%d/%m/%Y %H:%M') }} · {{ c.tamano_kb }} KB</small>
+        <a class="link" href="{{ url_for('descargar_copia_guardada', nombre=c.nombre) }}">Descargar</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</article>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, chip, fila_movimiento, saldo_clase %}
+{% set seccion = 'resumen' %}
+{% block title %}Resumen{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Resumen</h1>
+    <p class="muted">Situación financiera de {{ ajustes.nombre_negocio }} al {{ hoy|fecha }}.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ingreso" href="{{ url_for('nuevo_movimiento', tipo='ingreso', next=url_for('resumen')) }}">{{ icon('ingreso', 18) }} Ingreso</a>
+    <a class="btn btn-gasto" href="{{ url_for('nuevo_movimiento', tipo='gasto', next=url_for('resumen')) }}">{{ icon('gasto', 18) }} Gasto</a>
+  </div>
+</div>
+
+<section class="stats">
+  <article class="stat stat-ingreso">
+    <div class="stat-head"><span class="stat-icon">{{ icon('ingreso', 18) }}</span>Total de ingresos</div>
+    <div class="stat-value">{{ total.ingresos|dinero }}</div>
+    <div class="stat-foot">Este mes: <strong>{{ mes.ingresos|dinero }}</strong></div>
+  </article>
+  <article class="stat stat-gasto">
+    <div class="stat-head"><span class="stat-icon">{{ icon('gasto', 18) }}</span>Total de gastos</div>
+    <div class="stat-value">{{ total.gastos|dinero }}</div>
+    <div class="stat-foot">Este mes: <strong>{{ mes.gastos|dinero }}</strong></div>
+  </article>
+  <article class="stat stat-saldo">
+    <div class="stat-head"><span class="stat-icon">{{ icon('cartera', 18) }}</span>Saldo disponible</div>
+    <div class="stat-value {{ saldo_clase(total.saldo) }}">{{ total.saldo|dinero }}</div>
+    <div class="stat-foot">{{ total.cantidad }} movimiento{{ 's' if total.cantidad != 1 }} registrado{{ 's' if total.cantidad != 1 }}</div>
+  </article>
+</section>
+
+<section class="grid-2">
+  <article class="card">
+    <header class="card-head">
+      <h2>{{ nombre_mes }}</h2>
+      <a class="link" href="{{ url_for('movimientos', periodo='mes') }}">Ver movimientos</a>
+    </header>
+    <dl class="kv">
+      <div><dt>Ingresos del mes</dt><dd class="ingreso">{{ mes.ingresos|dinero }}</dd></div>
+      <div><dt>Gastos del mes</dt><dd class="gasto">{{ mes.gastos|dinero }}</dd></div>
+      <div class="kv-total"><dt>Resultado del mes</dt><dd class="{{ saldo_clase(mes.saldo) }}">{{ mes.saldo|dinero(true) }}</dd></div>
+    </dl>
+    <h3 class="subhead">Esta semana</h3>
+    <dl class="kv">
+      <div><dt>Ingresos</dt><dd class="ingreso">{{ semana.ingresos|dinero }}</dd></div>
+      <div><dt>Gastos</dt><dd class="gasto">{{ semana.gastos|dinero }}</dd></div>
+      <div class="kv-total"><dt>Resultado</dt><dd class="{{ saldo_clase(semana.saldo) }}">{{ semana.saldo|dinero(true) }}</dd></div>
+    </dl>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <h2>Últimos 6 meses</h2>
+      <a class="link" href="{{ url_for('informes') }}">Ver informes</a>
+    </header>
+    <div class="legend"><span class="lg lg-ingreso">Ingresos</span><span class="lg lg-gasto">Gastos</span></div>
+    <div class="bars" role="img" aria-label="Gráfico de ingresos y gastos de los últimos 6 meses">
+      {% for m in meses %}
+      <a class="bar-group" href="{{ url_for('informes', vista='semanal', mes=m.mes) }}"
+         title="{{ m.etiqueta }}: ingresos {{ m.ingresos|dinero }} · gastos {{ m.gastos|dinero }}">
+        <span class="bar-pair">
+          <span class="bar bar-ingreso" style="--h: {{ (m.ingresos * 100 / maximo)|round(1) }}%"></span>
+          <span class="bar bar-gasto" style="--h: {{ (m.gastos * 100 / maximo)|round(1) }}%"></span>
+        </span>
+        <span class="bar-label">{{ m.etiqueta }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="grid-2 grid-wide">
+  <article class="card">
+    <header class="card-head">
+      <h2>Movimientos recientes</h2>
+      <a class="link" href="{{ url_for('movimientos') }}">Ver todos</a>
+    </header>
+    {% if recientes %}
+    <ul class="mov-list compact">
+      {% for m in recientes %}{{ fila_movimiento(m, url_for('resumen')) }}{% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty">
+      <div class="empty-icon">{{ icon('lista', 26) }}</div>
+      <p><strong>Aún no hay movimientos</strong></p>
+      <p class="muted">Registra tu primera venta o gasto para ver aquí el resumen.</p>
+      <a class="btn btn-primary" href="{{ url_for('nuevo_movimiento') }}">{{ icon('mas', 18) }} Registrar movimiento</a>
+    </div>
+    {% endif %}
+  </article>
+
+  <article class="card">
+    <header class="card-head"><h2>Gastos del mes por categoría</h2></header>
+    {% if gastos_mes %}
+    <ul class="cat-bars">
+      {% for c in gastos_mes %}
+      <li>
+        <div class="cat-bars-head">{{ chip(c.nombre, c.color) }}<span>{{ c.total|dinero }}</span></div>
+        <div class="meter"><span style="--w: {{ c.porcentaje }}%; --c: {{ c.color }}"></span></div>
+        <small class="muted">{{ c.porcentaje }}% de los gastos · {{ c.cantidad }} mov.</small>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted empty-small">No hay gastos registrados este mes.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

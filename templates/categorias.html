@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, error, chip %}
+{% set seccion = 'categorias_view' %}
+{% block title %}Categorías{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Categorías</h1>
+    <p class="muted">Organiza tus movimientos. Cada categoría puede usarse para ingresos, gastos o ambos.</p>
+  </div>
+</div>
+
+<div class="grid-2 grid-side">
+  <article class="card card-flush">
+    <ul class="cat-list">
+      {% for c in categorias %}
+      <li class="{{ 'editing' if editando and editando.id == c.id }}">
+        <div class="cat-main">
+          {{ chip(c.nombre, c.color) }}
+          <small class="muted">{{ TIPOS_CATEGORIA[c.tipo] }} · {{ c.cantidad }} movimiento{{ 's' if c.cantidad != 1 }}</small>
+        </div>
+        <div class="cat-totals">
+          {% if c.ingresos %}<span class="ingreso">+{{ c.ingresos|dinero }}</span>{% endif %}
+          {% if c.gastos %}<span class="gasto">−{{ c.gastos|dinero }}</span>{% endif %}
+        </div>
+        <div class="cat-actions">
+          <a class="icon-btn" href="{{ url_for('movimientos', categoria=c.id) }}" title="Ver movimientos" aria-label="Ver movimientos">{{ icon('lista', 17) }}</a>
+          <a class="icon-btn" href="{{ url_for('editar_categoria', cat_id=c.id) }}" title="Editar" aria-label="Editar">{{ icon('editar', 17) }}</a>
+          {% if c.cantidad %}
+          <a class="icon-btn danger" href="{{ url_for('eliminar_categoria', cat_id=c.id) }}" title="Eliminar" aria-label="Eliminar">{{ icon('eliminar', 17) }}</a>
+          {% else %}
+          <form method="post" action="{{ url_for('eliminar_categoria', cat_id=c.id) }}"
+                data-confirm="¿Eliminar la categoría «{{ c.nombre }}»?">
+            {{ csrf() }}
+            <button class="icon-btn danger" type="submit" title="Eliminar" aria-label="Eliminar">{{ icon('eliminar', 17) }}</button>
+          </form>
+          {% endif %}
+        </div>
+      </li>
+      {% else %}
+      <li class="empty-small muted">No hay categorías. Crea la primera.</li>
+      {% endfor %}
+    </ul>
+  </article>
+
+  <article class="card" id="formulario">
+    <header class="card-head"><h2>{{ 'Editar categoría' if editando else 'Nueva categoría' }}</h2></header>
+    <form method="post" class="form"
+          action="{{ url_for('editar_categoria', cat_id=editando.id) if editando else url_for('categorias_view') }}">
+      {{ csrf() }}
+      <label class="field">
+        <span>Nombre</span>
+        <input type="text" name="nombre" maxlength="40" required value="{{ v.nombre }}"
+               placeholder="Ej.: Alquiler" class="{{ 'invalid' if errores.nombre }}" {{ 'autofocus' if editando }}>
+        {{ error(errores, 'nombre') }}
+      </label>
+      <label class="field">
+        <span>Se usa para</span>
+        <select name="tipo" class="{{ 'invalid' if errores.tipo }}">
+          {% for valor, texto in TIPOS_CATEGORIA.items() %}
+          <option value="{{ valor }}" {{ 'selected' if v.tipo == valor }}>{{ texto }}</option>
+          {% endfor %}
+        </select>
+        {{ error(errores, 'tipo') }}
+      </label>
+      <div class="field">
+        <span>Color</span>
+        <div class="swatches">
+          {% for col in ['#059669', '#0891b2', '#2563eb', '#4f46e5', '#9333ea', '#db2777', '#dc2626', '#d97706', '#65a30d', '#64748b'] %}
+          <label class="swatch" style="--c: {{ col }}">
+            <input type="radio" name="color" value="{{ col }}" {{ 'checked' if v.color|lower == col }} aria-label="Color {{ col }}">
+            <span></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-actions">
+        {% if editando %}<a class="btn btn-ghost" href="{{ url_for('categorias_view') }}">Cancelar</a>{% endif %}
+        <button class="btn btn-primary" type="submit">{{ icon('check', 18) }} {{ 'Guardar cambios' if editando else 'Crear categoría' }}</button>
+      </div>
+    </form>
+  </article>
+</div>
+{% endblock %}

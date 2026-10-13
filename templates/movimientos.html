@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, fila_movimiento, saldo_clase %}
+{% set seccion = 'movimientos' %}
+{% block title %}Movimientos{% endblock %}
+{% block content %}
+{% set volver = request.full_path.rstrip('?') %}
+<div class="page-head">
+  <div>
+    <h1>Movimientos</h1>
+    <p class="muted">Consulta, corrige o elimina tus ingresos y gastos.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="{{ url_for('exportar_movimientos', **request.args.to_dict()) }}" title="Descargar en Excel (CSV)">{{ icon('descargar', 18) }} Exportar</a>
+    <a class="btn btn-primary" href="{{ url_for('nuevo_movimiento', next=volver) }}">{{ icon('mas', 18) }} Nuevo</a>
+  </div>
+</div>
+
+<form class="card filters" method="get" id="filtros">
+  <div class="filters-grid">
+    <label class="field field-search">
+      <span>Buscar</span>
+      <div class="input-icon">{{ icon('buscar', 18) }}<input type="search" name="q" value="{{ filtros.q }}" placeholder="Descripción…"></div>
+    </label>
+    <label class="field">
+      <span>Período</span>
+      <select name="periodo" data-periodo>
+        {% for valor, texto in PERIODOS %}
+        <option value="{{ valor }}" {{ 'selected' if filtros.periodo == valor }}>{{ texto }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field" data-personalizado>
+      <span>Desde</span>
+      <input type="date" name="desde" value="{{ filtros.desde.isoformat() if filtros.desde }}">
+    </label>
+    <label class="field" data-personalizado>
+      <span>Hasta</span>
+      <input type="date" name="hasta" value="{{ filtros.hasta.isoformat() if filtros.hasta }}">
+    </label>
+    <label class="field">
+      <span>Tipo</span>
+      <select name="tipo">
+        <option value="">Todos</option>
+        {% for valor, texto in TIPOS.items() %}
+        <option value="{{ valor }}" {{ 'selected' if filtros.tipo == valor }}>{{ texto }}s</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Categoría</span>
+      <select name="categoria">
+        <option value="">Todas</option>
+        {% for c in categorias %}
+        <option value="{{ c.id }}" {{ 'selected' if filtros.categoria == c.id }}>{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="filters-actions">
+    {% if filtros.activos %}<a class="btn btn-ghost" href="{{ url_for('movimientos') }}">Limpiar</a>{% endif %}
+    <button class="btn btn-dark" type="submit">{{ icon('filtro', 16) }} Filtrar</button>
+  </div>
+</form>
+
+<section class="totals-strip">
+  <div><span>Ingresos</span><strong class="ingreso">{{ totales.ingresos|dinero }}</strong></div>
+  <div><span>Gastos</span><strong class="gasto">{{ totales.gastos|dinero }}</strong></div>
+  <div><span>Resultado</span><strong class="{{ saldo_clase(totales.saldo) }}">{{ totales.saldo|dinero(true) }}</strong></div>
+  <div><span>Movimientos</span><strong>{{ totales.cantidad }}</strong></div>
+</section>
+{% if filtros.desde or filtros.hasta %}
+<p class="muted period-note">{{ icon('calendario', 16) }}
+  {% if filtros.desde and filtros.hasta %}Del {{ filtros.desde|fecha }} al {{ filtros.hasta|fecha }}
+  {% elif filtros.desde %}Desde el {{ filtros.desde|fecha }}{% else %}Hasta el {{ filtros.hasta|fecha }}{% endif %}
+</p>
+{% endif %}
+
+<article class="card card-flush">
+  {% if movimientos %}
+  <div class="mov-list-head">
+    <span></span><span>Descripción</span><span>Categoría</span><span class="right">Importe</span><span></span>
+  </div>
+  <ul class="mov-list">
+    {% for m in movimientos %}{{ fila_movimiento(m, volver) }}{% endfor %}
+  </ul>
+  {% if paginas > 1 %}
+  <nav class="pagination">
+    {% if pagina > 1 %}<a class="btn btn-ghost btn-sm" href="{{ url_con(pagina=pagina - 1) }}">{{ icon('anterior', 16) }} Anterior</a>{% else %}<span></span>{% endif %}
+    <span class="muted">Página {{ pagina }} de {{ paginas }}</span>
+    {% if pagina < paginas %}<a class="btn btn-ghost btn-sm" href="{{ url_con(pagina=pagina + 1) }}">Siguiente {{ icon('siguiente', 16) }}</a>{% else %}<span></span>{% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">{{ icon('buscar', 26) }}</div>
+    {% if filtros.activos %}
+    <p><strong>No hay movimientos con estos filtros</strong></p>
+    <p class="muted">Prueba con otro período o categoría.</p>
+    <a class="btn btn-ghost" href="{{ url_for('movimientos') }}">Ver todos</a>
+    {% else %}
+    <p><strong>Aún no hay movimientos</strong></p>
+    <p class="muted">Empieza registrando tu primer ingreso o gasto.</p>
+    <a class="btn btn-primary" href="{{ url_for('nuevo_movimiento') }}">{{ icon('mas', 18) }} Registrar movimiento</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</article>
+{% endblock %}

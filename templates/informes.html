@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, chip, saldo_clase %}
+{% set seccion = 'informes' %}
+{% block title %}Informes{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Informes</h1>
+    <p class="muted">{{ 'Resumen mes a mes del año' if vista == 'mensual' else 'Resumen semana a semana del mes' }}.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-ghost" type="button" data-imprimir>{{ icon('imprimir', 18) }} Imprimir</button>
+  </div>
+</div>
+
+<div class="report-toolbar">
+  <nav class="tabs" aria-label="Tipo de informe">
+    <a href="{{ url_for('informes', vista='mensual', anio=desde.year) }}" class="{{ 'active' if vista == 'mensual' }}">Mensual</a>
+    <a href="{{ url_for('informes', vista='semanal', mes=(desde.strftime('%Y-%m') if vista == 'semanal' else hoy.strftime('%Y-%m'))) }}" class="{{ 'active' if vista == 'semanal' }}">Semanal</a>
+  </nav>
+  <div class="period-nav">
+    <a class="icon-btn" href="{{ url_for('informes', **anterior) }}" aria-label="Anterior">{{ icon('anterior') }}</a>
+    <form method="get" class="period-select">
+      <input type="hidden" name="vista" value="{{ vista }}">
+      {% if vista == 'mensual' %}
+      <select name="anio" data-autosubmit aria-label="Año">
+        {% for a in anios|reverse %}<option value="{{ a }}" {{ 'selected' if a == seleccion }}>{{ a }}</option>{% endfor %}
+        {% if seleccion not in anios %}<option value="{{ seleccion }}" selected>{{ seleccion }}</option>{% endif %}
+      </select>
+      {% else %}
+      <input type="month" name="mes" value="{{ seleccion }}" data-autosubmit aria-label="Mes">
+      {% endif %}
+    </form>
+    <a class="icon-btn" href="{{ url_for('informes', **siguiente) }}" aria-label="Siguiente">{{ icon('siguiente') }}</a>
+  </div>
+</div>
+
+<h2 class="report-title">{{ titulo }}</h2>
+
+<section class="stats">
+  <article class="stat stat-ingreso">
+    <div class="stat-head"><span class="stat-icon">{{ icon('ingreso', 18) }}</span>Ingresos</div>
+    <div class="stat-value">{{ total.ingresos|dinero }}</div>
+    <div class="stat-foot">Promedio por {{ 'mes' if vista == 'mensual' else 'semana' }} con actividad: {{ total.promedio_ingresos|dinero }}</div>
+  </article>
+  <article class="stat stat-gasto">
+    <div class="stat-head"><span class="stat-icon">{{ icon('gasto', 18) }}</span>Gastos</div>
+    <div class="stat-value">{{ total.gastos|dinero }}</div>
+    <div class="stat-foot">Promedio por {{ 'mes' if vista == 'mensual' else 'semana' }} con actividad: {{ total.promedio_gastos|dinero }}</div>
+  </article>
+  <article class="stat stat-saldo">
+    <div class="stat-head"><span class="stat-icon">{{ icon('cartera', 18) }}</span>Resultado</div>
+    <div class="stat-value {{ saldo_clase(total.saldo) }}">{{ total.saldo|dinero(true) }}</div>
+    <div class="stat-foot">
+      {% if mejor %}Mejor {{ 'mes' if vista == 'mensual' else 'semana' }}: {{ mejor.etiqueta }} ({{ mejor.saldo|dinero(true) }})
+      {% else %}Sin movimientos en este período{% endif %}
+    </div>
+  </article>
+</section>
+
+<article class="card">
+  <header class="card-head">
+    <h2>Ingresos y gastos por {{ 'mes' if vista == 'mensual' else 'semana' }}</h2>
+    <div class="legend"><span class="lg lg-ingreso">Ingresos</span><span class="lg lg-gasto">Gastos</span></div>
+  </header>
+  <div class="bars bars-lg" role="img" aria-label="Gráfico de ingresos y gastos">
+    {% for f in filas %}
+    <div class="bar-group {{ 'current' if f.actual }}" title="{{ f.etiqueta }}: ingresos {{ f.ingresos|dinero }} · gastos {{ f.gastos|dinero }}">
+      <span class="bar-pair">
+        <span class="bar bar-ingreso" style="--h: {{ (f.ingresos * 100 / maximo)|round(1) }}%"></span>
+        <span class="bar bar-gasto" style="--h: {{ (f.gastos * 100 / maximo)|round(1) }}%"></span>
+      </span>
+      <span class="bar-label">{{ f.corta }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</article>
+
+<article class="card card-flush">
+  <div class="table-wrap">
+    <table class="table table-report">
+      <thead>
+        <tr>
+          <th>{{ 'Mes' if vista == 'mensual' else 'Semana' }}</th>
+          <th class="right">Ingresos</th>
+          <th class="right">Gastos</th>
+          <th class="right">Resultado</th>
+          <th class="no-print"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in filas %}
+        <tr class="{{ 'current' if f.actual }} {{ 'empty-row' if not (f.ingresos or f.gastos) }}">
+          <td class="col-periodo">
+            <a href="{{ url_for('movimientos', periodo='personalizado', desde=f.desde.isoformat(), hasta=f.hasta.isoformat()) }}"><strong>{{ f.etiqueta }}</strong></a>
+            {% if f.detalle %}<small class="muted block">{{ f.detalle }}</small>{% endif %}
+          </td>
+          <td class="right ingreso col-ingresos" data-label="Ingresos">{{ f.ingresos|dinero }}</td>
+          <td class="right gasto col-gastos" data-label="Gastos">{{ f.gastos|dinero }}</td>
+          <td class="right strong col-saldo {{ saldo_clase(f.saldo) }}">{{ f.saldo|dinero(true) }}</td>
+          <td class="right no-print nowrap">
+            {% if vista == 'mensual' %}
+            <a class="link" href="{{ url_for('informes', vista='semanal', mes=f.mes) }}">Semanas</a>
+            {% endif %}
+            <a class="link" href="{{ url_for('movimientos', periodo='personalizado', desde=f.desde.isoformat(), hasta=f.hasta.isoformat()) }}">Detalle</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th class="col-periodo">Total</th>
+          <th class="right ingreso col-ingresos" data-label="Ingresos">{{ total.ingresos|dinero }}</th>
+          <th class="right gasto col-gastos" data-label="Gastos">{{ total.gastos|dinero }}</th>
+          <th class="right col-saldo {{ saldo_clase(total.saldo) }}">{{ total.saldo|dinero(true) }}</th>
+          <th class="no-print"></th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</article>
+
+<section class="grid-2">
+  {% for tipo, titulo_cat in [('ingreso', 'Ingresos por categoría'), ('gasto', 'Gastos por categoría')] %}
+  <article class="card">
+    <header class="card-head"><h2>{{ titulo_cat }}</h2></header>
+    {% if categorias_periodo[tipo] %}
+    <ul class="cat-bars">
+      {% for c in categorias_periodo[tipo] %}
+      <li>
+        <div class="cat-bars-head">
+          <a href="{{ url_for('movimientos', periodo='personalizado', desde=desde.isoformat(), hasta=hasta.isoformat(), categoria=c.id, tipo=tipo) }}">{{ chip(c.nombre, c.color) }}</a>
+          <span>{{ c.total|dinero }}</span>
+        </div>
+        <div class="meter"><span style="--w: {{ c.porcentaje }}%; --c: {{ c.color }}"></span></div>
+        <small class="muted">{{ c.porcentaje }}% · {{ c.cantidad }} movimiento{{ 's' if c.cantidad != 1 }}</small>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted empty-small">No hay {{ tipo }}s en este período.</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

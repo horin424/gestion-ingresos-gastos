@@ -1,0 +1,20 @@
+{% extends "auth_base.html" %}
+{% block title %}Iniciar sesión{% endblock %}
+{% block content %}
+<h1>{{ ajustes.nombre_negocio }}</h1>
+<p class="muted">Introduce tu contraseña para acceder.</p>
+<form method="post" class="form">
+  {{ csrf() }}
+  <label class="field">
+    <span>Contraseña</span>
+    <input type="password" name="password" autocomplete="current-password" required autofocus
+           class="{{ 'invalid' if error_login }}">
+  </label>
+  {% if error_login %}<p class="field-error">{{ error_login }}</p>{% endif %}
+  <label class="check">
+    <input type="checkbox" name="recordar" value="1" checked>
+    <span>Mantener la sesión iniciada en este dispositivo</span>
+  </label>
+  <button class="btn btn-primary btn-block btn-lg" type="submit">Entrar</button>
+</form>
+{% endblock %}

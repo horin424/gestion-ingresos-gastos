@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, error %}
+{% set seccion = 'movimientos' %}
+{% block title %}{{ 'Editar movimiento' if mov else 'Nuevo movimiento' }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{{ volver }}">{{ icon('anterior', 16) }} Volver</a>
+    <h1>{{ 'Editar movimiento' if mov else 'Nuevo movimiento' }}</h1>
+  </div>
+</div>
+
+<form method="post" class="card form form-narrow" novalidate data-form-movimiento>
+  {{ csrf() }}
+  <input type="hidden" name="next" value="{{ volver }}">
+
+  <div class="segmented" role="radiogroup" aria-label="Tipo de movimiento">
+    <label class="seg seg-ingreso">
+      <input type="radio" name="tipo" value="ingreso" {{ 'checked' if v.tipo == 'ingreso' }}>
+      <span>{{ icon('ingreso', 18) }} Ingreso</span>
+    </label>
+    <label class="seg seg-gasto">
+      <input type="radio" name="tipo" value="gasto" {{ 'checked' if v.tipo == 'gasto' }}>
+      <span>{{ icon('gasto', 18) }} Gasto</span>
+    </label>
+  </div>
+  {{ error(errores, 'tipo') }}
+
+  <label class="field">
+    <span>Importe</span>
+    <div class="input-money {{ 'invalid' if errores.importe }}">
+      <span class="currency">{{ ajustes.simbolo }}</span>
+      <input type="text" name="importe" inputmode="decimal" autocomplete="off" required
+             value="{{ v.importe }}" placeholder="{{ '0,00' if ajustes.separadores == 'punto_coma' else '0.00' }}"
+             {{ 'autofocus' if not mov }}>
+    </div>
+    {{ error(errores, 'importe') }}
+  </label>
+
+  <div class="form-row">
+    <label class="field">
+      <span>Fecha</span>
+      <input type="date" name="fecha" value="{{ v.fecha }}" required class="{{ 'invalid' if errores.fecha }}">
+      {{ error(errores, 'fecha') }}
+    </label>
+    <label class="field">
+      <span>Categoría</span>
+      <select name="categoria_id" required class="{{ 'invalid' if errores.categoria_id }}" data-categorias>
+        <option value="">Elegir…</option>
+        {% for c in categorias %}
+        <option value="{{ c.id }}" data-tipo="{{ c.tipo }}" {{ 'selected' if v.categoria_id == c.id }}>{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+      {{ error(errores, 'categoria_id') }}
+      <small class="hint"><a class="link" href="{{ url_for('categorias_view') }}">Gestionar categorías</a></small>
+    </label>
+  </div>
+
+  <label class="field">
+    <span>Descripción <em class="muted">(opcional)</em></span>
+    <input type="text" name="descripcion" maxlength="200" value="{{ v.descripcion }}"
+           placeholder="Ej.: Venta mostrador, pago a proveedor…">
+  </label>
+
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ volver }}">Cancelar</a>
+    {% if not mov %}
+    <button class="btn btn-ghost" type="submit" name="accion" value="otro">Guardar y añadir otro</button>
+    {% endif %}
+    <button class="btn btn-primary" type="submit" name="accion" value="guardar">{{ icon('check', 18) }} Guardar</button>
+  </div>
+</form>
+
+{% if mov %}
+<form method="post" action="{{ url_for('eliminar_movimiento', mov_id=mov.id) }}" class="form-narrow danger-zone"
+      data-confirm="¿Eliminar este movimiento? Esta acción no se puede deshacer.">
+  {{ csrf() }}<input type="hidden" name="next" value="{{ volver }}">
+  <button class="btn btn-ghost-danger" type="submit">{{ icon('eliminar', 18) }} Eliminar movimiento</button>
+</form>
+{% endif %}
+{% endblock %}

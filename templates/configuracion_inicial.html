@@ -1,0 +1,30 @@
+{% extends "auth_base.html" %}
+{% block title %}Bienvenido{% endblock %}
+{% block content %}
+<h1>Bienvenido</h1>
+<p class="muted">Configura el sistema en un minuto. La contraseña protege tus datos financieros.</p>
+<form method="post" class="form">
+  {{ csrf() }}
+  <label class="field">
+    <span>Nombre de tu negocio</span>
+    <input type="text" name="nombre_negocio" maxlength="60" required autofocus
+           value="{{ form.get('nombre_negocio', '') }}" placeholder="Ej.: Papelería Central"
+           class="{{ 'invalid' if errores.nombre_negocio }}">
+    {{ error(errores, 'nombre_negocio') }}
+  </label>
+  <label class="field">
+    <span>Contraseña</span>
+    <input type="password" name="password" minlength="6" required autocomplete="new-password"
+           class="{{ 'invalid' if errores.password }}">
+    <small class="hint">Mínimo 6 caracteres.</small>
+    {{ error(errores, 'password') }}
+  </label>
+  <label class="field">
+    <span>Repite la contraseña</span>
+    <input type="password" name="password2" minlength="6" required autocomplete="new-password"
+           class="{{ 'invalid' if errores.password2 }}">
+    {{ error(errores, 'password2') }}
+  </label>
+  <button class="btn btn-primary btn-block btn-lg" type="submit">Comenzar</button>
+</form>
+{% endblock %}
