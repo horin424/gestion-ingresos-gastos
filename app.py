@@ -815,23 +815,34 @@ def ip_local():
         return None
 
 
+
+# Create the Flask app at the top level so Vercel can detect it
+app = create_app()
+
+
 def main():
-    app = create_app()
     host = os.environ.get("HOST", "0.0.0.0")
     puerto = int(os.environ.get("PORT", "5000"))
     local = f"http://localhost:{puerto}"
+
     print("\n  ==============================================")
     print("   Gestión de Ingresos y Gastos")
     print("  ==============================================")
     print(f"   En este equipo:          {local}")
+
     ip = ip_local()
     if ip and host == "0.0.0.0":
         print(f"   Desde el móvil o tableta: http://{ip}:{puerto}")
         print("   (conectados a la misma red Wi-Fi)")
+
     print("\n   No cierres esta ventana mientras uses el sistema.")
     print("  ==============================================\n")
+
     if os.environ.get("ABRIR_NAVEGADOR", "1") == "1":
-        threading.Timer(1.5, webbrowser.open, args=(local,)).start()
+        threading.Timer(
+            1.5, webbrowser.open, args=(local,)
+        ).start()
+
     try:
         from waitress import serve
     except ImportError:
@@ -842,3 +853,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
