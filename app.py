@@ -38,9 +38,16 @@ RUTAS_PUBLICAS = {"login", "configuracion_inicial", "static"}
 log = logging.getLogger(__name__)
 
 
+
 def create_app(config=None):
     app = Flask(__name__)
-    datos = os.path.join(BASE_DIR, "datos")
+
+    # Use a writable directory on Vercel
+    if os.environ.get("VERCEL"):
+        datos = "/tmp/datos"
+    else:
+        datos = os.path.join(BASE_DIR, "datos")
+
     app.config.update(
         DATOS_DIR=datos,
         DATABASE=os.path.join(datos, "finanzas.db"),
@@ -52,17 +59,26 @@ def create_app(config=None):
         SESSION_COOKIE_SAMESITE="Lax",
         PERMANENT_SESSION_LIFETIME=timedelta(days=30),
     )
+
+    # Apply any custom configuration
     if config:
         app.config.update(config)
 
+    # Create directories after configuration is applied
     os.makedirs(app.config["DATOS_DIR"], exist_ok=True)
     os.makedirs(app.config["COPIAS_DIR"], exist_ok=True)
-    app.secret_key = app.config.get("SECRET_KEY") or cargar_clave_secreta(app.config["DATOS_DIR"])
+
+    app.secret_key = (
+        app.config.get("SECRET_KEY")
+        or cargar_clave_secreta(app.config["DATOS_DIR"])
+    )
+
     database.init_db(app.config["DATABASE"])
     app.teardown_appcontext(database.close_db)
 
     registrar_plantillas(app)
     registrar_rutas(app)
+
     return app
 
 
